@@ -1,0 +1,2307 @@
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<head>-->
+<!--    <title>EduCloud SPA</title>-->
+
+<!--    &lt;!&ndash; Bootstrap &ndash;&gt;-->
+<!--    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">-->
+
+<!--    &lt;!&ndash; jQuery &ndash;&gt;-->
+<!--    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>-->
+
+<!--    &lt;!&ndash; Bootstrap JS &ndash;&gt;-->
+<!--    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>-->
+<!--</head>-->
+
+<!--<body>-->
+
+<!--&lt;!&ndash; ================= NAVBAR ================= &ndash;&gt;-->
+<!--<nav class="navbar navbar-expand-lg navbar-dark bg-dark">-->
+<!--    <div class="container-fluid">-->
+<!--        <a class="navbar-brand" href="#">EduCloud</a>-->
+
+<!--        <ul class="navbar-nav me-auto">-->
+<!--            <li class="nav-item">-->
+<!--                <a class="nav-link" href="#" id="navDashboard">Dashboard</a>-->
+<!--            </li>-->
+
+<!--            <li class="nav-item dropdown">-->
+<!--                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">-->
+<!--                    Add-->
+<!--                </a>-->
+<!--                <ul class="dropdown-menu">-->
+<!--                    <li><a class="dropdown-item add-item" data-type="student">Add Student</a></li>-->
+<!--                    <li><a class="dropdown-item add-item" data-type="parent">Add Parent</a></li>-->
+<!--                    <li><a class="dropdown-item add-item" data-type="teacher">Add Teacher</a></li>-->
+<!--                </ul>-->
+<!--            </li>-->
+<!--        </ul>-->
+<!--    </div>-->
+<!--</nav>-->
+
+<!--&lt;!&ndash; ================= CONTENT ================= &ndash;&gt;-->
+<!--<div class="container mt-4">-->
+
+<!--    &lt;!&ndash; Welcome &ndash;&gt;-->
+<!--    <div id="welcomeSection">-->
+<!--        <div class="alert alert-info">-->
+<!--            Welcome to EduCloud Dashboard 🚀-->
+<!--        </div>-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; Dashboard &ndash;&gt;-->
+<!--    <div id="dashboardSection" class="d-none">-->
+
+<!--        &lt;!&ndash; Tabs &ndash;&gt;-->
+<!--        <ul class="nav nav-tabs" id="dataTabs">-->
+<!--            <li class="nav-item">-->
+<!--                <a class="nav-link active tab-btn" data-type="students">Students</a>-->
+<!--            </li>-->
+<!--            <li class="nav-item">-->
+<!--                <a class="nav-link tab-btn" data-type="parents">Parents</a>-->
+<!--            </li>-->
+<!--            <li class="nav-item">-->
+<!--                <a class="nav-link tab-btn" data-type="teachers">Teachers</a>-->
+<!--            </li>-->
+<!--        </ul>-->
+
+<!--        &lt;!&ndash; Table &ndash;&gt;-->
+<!--        <div class="mt-3">-->
+
+<!--            &lt;!&ndash; Loading &ndash;&gt;-->
+<!--            <div id="loadingState" class="text-center d-none">-->
+<!--                <div class="spinner-border"></div>-->
+<!--            </div>-->
+
+<!--            &lt;!&ndash; No Data &ndash;&gt;-->
+<!--            <div id="noDataState" class="alert alert-warning d-none">-->
+<!--                No Data Available-->
+<!--            </div>-->
+
+<!--            &lt;!&ndash; Table &ndash;&gt;-->
+<!--            <table class="table table-bordered d-none" id="dataTable">-->
+<!--                <thead></thead>-->
+<!--                <tbody></tbody>-->
+<!--            </table>-->
+
+<!--        </div>-->
+<!--    </div>-->
+
+<!--</div>-->
+
+<!--&lt;!&ndash; ================= SCRIPT ================= &ndash;&gt;-->
+<!--<script>-->
+
+<!--    $(document).ready(function () {-->
+
+<!--        const API = {-->
+<!--            students: "/api/students",-->
+<!--            parents: "/api/parents",-->
+<!--            teachers: "/api/teachers"-->
+<!--        };-->
+
+<!--        // Cache to prevent multiple API calls-->
+<!--        let cache = {-->
+<!--            students: null,-->
+<!--            parents: null,-->
+<!--            teachers: null-->
+<!--        };-->
+
+<!--        let currentTab = "students";-->
+
+<!--        // ================= NAVIGATION =================-->
+<!--        $("#navDashboard").click(function () {-->
+<!--            $("#welcomeSection").addClass("d-none");-->
+<!--            $("#dashboardSection").removeClass("d-none");-->
+
+<!--            loadData(currentTab);-->
+<!--        });-->
+
+<!--        // ================= TAB SWITCH =================-->
+<!--        $(".tab-btn").click(function () {-->
+
+<!--            $(".tab-btn").removeClass("active");-->
+<!--            $(this).addClass("active");-->
+
+<!--            currentTab = $(this).data("type");-->
+
+<!--            loadData(currentTab);-->
+<!--        });-->
+
+<!--        // ================= LOAD DATA =================-->
+<!--        function loadData(type) {-->
+
+<!--            // If cached → use it-->
+<!--            if (cache[type]) {-->
+<!--                renderTable(cache[type]);-->
+<!--                return;-->
+<!--            }-->
+
+<!--            showLoading();-->
+
+<!--            $.ajax({-->
+<!--                url: API[type],-->
+<!--                method: "GET",-->
+<!--                success: function (res) {-->
+
+<!--                    cache[type] = res; // store once-->
+
+<!--                    if (!res.data || res.data.length === 0) {-->
+<!--                        showNoData();-->
+<!--                        return;-->
+<!--                    }-->
+
+<!--                    renderTable(res);-->
+<!--                },-->
+<!--                error: function () {-->
+<!--                    hideAll(); // silent error handling-->
+<!--                }-->
+<!--            });-->
+<!--        }-->
+
+<!--        // ================= RENDER TABLE =================-->
+<!--        function renderTable(res) {-->
+
+<!--            hideAll();-->
+
+<!--            let columns = res.columns;-->
+<!--            let data = res.data;-->
+
+<!--            let thead = "<tr>";-->
+<!--            columns.forEach(col => {-->
+<!--                thead += `<th>${col}</th>`;-->
+<!--            });-->
+<!--            thead += "</tr>";-->
+
+<!--            let tbody = "";-->
+<!--            data.forEach(row => {-->
+<!--                tbody += "<tr>";-->
+<!--                columns.forEach(col => {-->
+<!--                    tbody += `<td>${row[col] ?? ""}</td>`;-->
+<!--                });-->
+<!--                tbody += "</tr>";-->
+<!--            });-->
+
+<!--            $("#dataTable thead").html(thead);-->
+<!--            $("#dataTable tbody").html(tbody);-->
+
+<!--            $("#dataTable").removeClass("d-none");-->
+<!--        }-->
+
+<!--        // ================= STATES =================-->
+<!--        function showLoading() {-->
+<!--            hideAll();-->
+<!--            $("#loadingState").removeClass("d-none");-->
+<!--        }-->
+
+<!--        function showNoData() {-->
+<!--            hideAll();-->
+<!--            $("#noDataState").removeClass("d-none");-->
+<!--        }-->
+
+<!--        function hideAll() {-->
+<!--            $("#loadingState").addClass("d-none");-->
+<!--            $("#noDataState").addClass("d-none");-->
+<!--            $("#dataTable").addClass("d-none");-->
+<!--        }-->
+
+<!--        // ================= ADD ACTION =================-->
+<!--        $(".add-item").click(function () {-->
+<!--            const type = $(this).data("type");-->
+<!--            alert("Open Add " + type + " form (you can plug modal here)");-->
+<!--        });-->
+
+<!--    });-->
+
+<!--</script>-->
+
+<!--</body>-->
+<!--</html>-->
+
+<!--version 1-->
+
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<head>-->
+<!--    <title>EduCloud SPA</title>-->
+
+<!--    &lt;!&ndash; Bootstrap CSS &ndash;&gt;-->
+<!--    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">-->
+
+<!--    &lt;!&ndash; jQuery &ndash;&gt;-->
+<!--    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>-->
+
+<!--    &lt;!&ndash; Favicon Fix &ndash;&gt;-->
+<!--    <link rel="icon" href="data:,">-->
+
+<!--    <style>-->
+<!--        /* Style for inline editable cells */-->
+<!--        td.editable-cell {-->
+<!--            cursor: pointer;-->
+<!--            transition: background-color 0.2s;-->
+<!--        }-->
+<!--        td.editable-cell:hover {-->
+<!--            background-color: #fff3cd; /* Light yellow hover effect */-->
+<!--        }-->
+
+<!--        /* The input box that appears inside the cell */-->
+<!--        .inline-input {-->
+<!--            width: 100%;-->
+<!--            height: 100%;-->
+<!--            border: 1px solid #80bdff;-->
+<!--            padding: 2px 5px;-->
+<!--        }-->
+
+<!--        /* Card styling for the form */-->
+<!--        .form-card {-->
+<!--            border: 1px solid #e0e0e0;-->
+<!--            border-radius: 8px;-->
+<!--            box-shadow: 0 4px 6px rgba(0,0,0,0.1);-->
+<!--        }-->
+<!--    </style>-->
+<!--</head>-->
+<!--<body>-->
+
+<!--&lt;!&ndash; ================= NAVBAR ================= &ndash;&gt;-->
+<!--<nav class="navbar navbar-expand-lg navbar-dark bg-dark">-->
+<!--    <div class="container-fluid">-->
+<!--        <a class="navbar-brand" href="#">EduCloud</a>-->
+
+<!--        <ul class="navbar-nav me-auto">-->
+<!--            &lt;!&ndash; Dashboard Link &ndash;&gt;-->
+<!--            <li class="nav-item">-->
+<!--                <a class="nav-link" id="navDashboard">Dashboard</a>-->
+<!--            </li>-->
+
+<!--            &lt;!&ndash; Add Dropdown &ndash;&gt;-->
+<!--            <li class="nav-item dropdown">-->
+<!--                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">-->
+<!--                    Add-->
+<!--                </a>-->
+<!--                <ul class="dropdown-menu">-->
+<!--                    <li><a class="dropdown-item" onclick="loadForm('student')">Add Student</a></li>-->
+<!--                    <li><a class="dropdown-item" onclick="loadForm('parent')">Add Parent</a></li>-->
+<!--                    <li><a class="dropdown-item" onclick="loadForm('teacher')">Add Teacher</a></li>-->
+<!--                </ul>-->
+<!--            </li>-->
+<!--        </ul>-->
+<!--    </div>-->
+<!--</nav>-->
+
+<!--&lt;!&ndash; ================= CONTENT ================= &ndash;&gt;-->
+<!--<div class="container mt-4">-->
+
+<!--    &lt;!&ndash; 1. Welcome Section &ndash;&gt;-->
+<!--    <div id="welcomeSection">-->
+<!--        <div class="alert alert-info text-center">-->
+<!--            <h4>Welcome to EduCloud Dashboard 🚀</h4>-->
+<!--            <p>Click <strong>Dashboard</strong> to view data.</p>-->
+<!--            <small class="text-muted">Tip: Click a table cell to edit inline, or use the Edit button for full form.</small>-->
+<!--        </div>-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; 2. Dashboard Section &ndash;&gt;-->
+<!--    <div id="dashboardSection" class="d-none">-->
+
+<!--        &lt;!&ndash; Tabs &ndash;&gt;-->
+<!--        <ul class="nav nav-tabs" id="dataTabs">-->
+<!--            <li class="nav-item">-->
+<!--                <a class="nav-link active tab-btn" data-type="students">Students</a>-->
+<!--            </li>-->
+<!--            <li class="nav-item">-->
+<!--                <a class="nav-link tab-btn" data-type="parents">Parents</a>-->
+<!--            </li>-->
+<!--            <li class="nav-item">-->
+<!--                <a class="nav-link tab-btn" data-type="teachers">Teachers</a>-->
+<!--            </li>-->
+<!--        </ul>-->
+
+<!--        &lt;!&ndash; Table Container &ndash;&gt;-->
+<!--        <div class="mt-3">-->
+
+<!--            &lt;!&ndash; Loading State &ndash;&gt;-->
+<!--            <div id="loadingState" class="text-center d-none py-5">-->
+<!--                <div class="spinner-border text-primary" role="status"></div>-->
+<!--            </div>-->
+
+<!--            &lt;!&ndash; No Data State &ndash;&gt;-->
+<!--            <div id="noDataState" class="alert alert-warning text-center d-none">-->
+<!--                No Data Available-->
+<!--            </div>-->
+
+<!--            &lt;!&ndash; Data Table &ndash;&gt;-->
+<!--            <div class="table-responsive">-->
+<!--                <table class="table table-bordered table-hover" id="dataTable">-->
+<!--                    <thead class="table-dark"></thead>-->
+<!--                    <tbody></tbody>-->
+<!--                </table>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; 3. Form Section (Add/Edit) &ndash;&gt;-->
+<!--    <div id="formSection" class="d-none">-->
+<!--        <div class="form-card">-->
+<!--            <div class="card-header bg-primary text-white" id="formHeader">-->
+<!--                &lt;!&ndash; Dynamic Title &ndash;&gt;-->
+<!--            </div>-->
+<!--            <div class="card-body" id="formContainer">-->
+<!--                &lt;!&ndash; Dynamic Form &ndash;&gt;-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
+
+<!--</div>-->
+
+<!--&lt;!&ndash; ================= SCRIPTS ================= &ndash;&gt;-->
+<!--<script>-->
+<!--    // === CONFIGURATION ===-->
+<!--    const BASE_URL = "http://localhost:8080/api";-->
+
+<!--    // === STATE MANAGEMENT ===-->
+<!--    let currentTab = "students";-->
+<!--    let editingId = null;        // For Form Logic-->
+<!--    let cache = {-->
+<!--        students: null,-->
+<!--        parents: null,-->
+<!--        teachers: null-->
+<!--    };-->
+
+<!--    $(document).ready(function () {-->
+
+<!--        // === NAVIGATION ===-->
+
+<!--        $("#navDashboard").click(function () {-->
+<!--            showView("dashboard");-->
+<!--            // If cache exists, show it immediately, otherwise load-->
+<!--            if(!cache[currentTab]) loadData(currentTab);-->
+<!--        });-->
+
+<!--        // Tab Switching-->
+<!--        $(".tab-btn").click(function () {-->
+<!--            $(".tab-btn").removeClass("active");-->
+<!--            $(this).addClass("active");-->
+
+<!--            currentTab = $(this).data("type");-->
+<!--            loadData(currentTab);-->
+<!--        });-->
+
+<!--        // === DATA LOADING ===-->
+
+<!--        function loadData(type) {-->
+<!--            if (cache[type]) {-->
+<!--                renderTable(cache[type]);-->
+<!--                return;-->
+<!--            }-->
+
+<!--            showLoading(true);-->
+
+<!--            $.ajax({-->
+<!--                url: `${BASE_URL}/${type}`,-->
+<!--                method: "GET",-->
+<!--                success: function (res) {-->
+<!--                    cache[type] = res;-->
+<!--                    renderTable(res);-->
+<!--                },-->
+<!--                error: function () {-->
+<!--                    showLoading(false);-->
+<!--                    alert("Error loading data.");-->
+<!--                }-->
+<!--            });-->
+<!--        }-->
+
+<!--        // === TABLE RENDERING ===-->
+
+<!--        function renderTable(res) {-->
+<!--            hideAllStates();-->
+
+<!--            const columns = res.columns || [];-->
+<!--            const data = res.data || [];-->
+
+<!--            // 1. Build Header-->
+<!--            let thead = "<tr>";-->
+<!--            columns.forEach(col => {-->
+<!--                thead += `<th>${formatLabel(col.name)}</th>`;-->
+<!--            });-->
+<!--            thead += "<th style='width: 140px;'>Actions</th>";-->
+<!--            thead += "</tr>";-->
+<!--            $("#dataTable thead").html(thead);-->
+
+<!--            // 2. Build Body-->
+<!--            let tbody = "";-->
+
+<!--            if (data.length === 0) {-->
+<!--                $("#noDataState").removeClass("d-none");-->
+<!--                $("#dataTable").removeClass("d-none");-->
+<!--                return;-->
+<!--            }-->
+
+<!--            data.forEach((row, index) => {-->
+<!--                const rowId = row.id || row.Id || row.ID;-->
+<!--                const columnKey = columns.map(c => c.name); // Map for column keys-->
+
+<!--                tbody += `<tr data-id="${rowId}" data-index="${index}">`;-->
+
+<!--                columns.forEach(col => {-->
+<!--                    const key = col.name;-->
+<!--                    const val = row[key] !== null && row[key] !== undefined ? row[key] : "";-->
+<!--                    // Add 'editable-cell' class for inline editing-->
+<!--                    tbody += `<td class="editable-cell" data-field="${key}">${val}</td>`;-->
+<!--                });-->
+
+<!--                // Action Buttons (Full Edit & Delete)-->
+<!--                tbody += `-->
+<!--                    <td>-->
+<!--                        <button class="btn btn-sm btn-warning me-1 full-edit-btn">Edit</button>-->
+<!--                        <button class="btn btn-sm btn-danger delete-btn">Del</button>-->
+<!--                    </td>-->
+<!--                `;-->
+<!--                tbody += "</tr>";-->
+<!--            });-->
+
+<!--            $("#dataTable tbody").html(tbody);-->
+<!--            $("#dataTable").removeClass("d-none");-->
+<!--        }-->
+
+<!--        // ==========================================-->
+<!--        // METHOD 1: INLINE CELL EDITING-->
+<!--        // ==========================================-->
+
+<!--        $(document).on("click", "td.editable-cell", function() {-->
+<!--            // 1. If already editing another cell, close it first-->
+<!--            $("td.editable-cell").find("input").each(function(){-->
+<!--                $(this).parent().text($(this).attr('data-original-val'));-->
+<!--            });-->
+
+<!--            const cell = $(this);-->
+<!--            const originalValue = cell.text();-->
+<!--            const field = cell.data("field");-->
+
+<!--            // 2. Replace text with input-->
+<!--            cell.html(`<input type="text" class="inline-input form-control-sm" value="${originalValue}" data-original-val="${originalValue}"/>`);-->
+
+<!--            const input = cell.find("input");-->
+<!--            input.focus();-->
+<!--            input.select();-->
+
+<!--            // 3. Handle Save (Enter Key)-->
+<!--            input.on('keyup', function(e) {-->
+<!--                if (e.key === "Enter") {-->
+<!--                    const newValue = $(this).val();-->
+<!--                    saveInlineEdit(cell, field, newValue, originalValue);-->
+<!--                }-->
+<!--                // Handle Cancel (Escape Key)-->
+<!--                if (e.key === "Escape") {-->
+<!--                    cell.text(originalValue);-->
+<!--                }-->
+<!--            });-->
+
+<!--            // 4. Handle Save on Blur (optional, uncomment if desired)-->
+<!--            // input.on('blur', function() {-->
+<!--            //     const newValue = $(this).val();-->
+<!--            //     saveInlineEdit(cell, field, newValue, originalValue);-->
+<!--            // });-->
+<!--        });-->
+
+<!--        async function saveInlineEdit(cell, field, newValue, oldValue) {-->
+<!--            if(newValue === oldValue) {-->
+<!--                cell.text(oldValue); // Just revert if no change-->
+<!--                return;-->
+<!--            }-->
+
+<!--            const row = cell.closest("tr");-->
+<!--            const id = row.data("id");-->
+<!--            const type = currentTab;-->
+
+<!--            // Construct Payload-->
+<!--            // We need the full object usually for a PUT, or we can use PATCH.-->
+<!--            // Here we assume we need to send the full object or at least the changed field.-->
+<!--            // We will get the current row data from cache to build a full payload.-->
+
+<!--            const rowData = cache[type].data.find(r => (r.id || r.Id) == id);-->
+<!--            if (!rowData) return alert("Error: Row data not found in cache.");-->
+
+<!--            // Clone data and update the specific field-->
+<!--            const payload = { ...rowData };-->
+<!--            payload[field] = newValue;-->
+
+<!--            // Remove display-only properties if necessary (optional)-->
+
+<!--            try {-->
+<!--                const res = await fetch(`${BASE_URL}/${type}/${id}`, {-->
+<!--                    method: "PUT",-->
+<!--                    headers: { "Content-Type": "application/json" },-->
+<!--                    body: JSON.stringify(payload)-->
+<!--                });-->
+
+<!--                if (res.ok) {-->
+<!--                    cell.text(newValue); // Update UI-->
+<!--                    // Update Cache-->
+<!--                    rowData[field] = newValue;-->
+<!--                    showToast("Updated successfully!");-->
+<!--                } else {-->
+<!--                    cell.text(oldValue); // Revert UI-->
+<!--                    alert("Update failed.");-->
+<!--                }-->
+<!--            } catch (e) {-->
+<!--                console.error(e);-->
+<!--                cell.text(oldValue);-->
+<!--                alert("Network error.");-->
+<!--            }-->
+<!--        }-->
+
+<!--        // ==========================================-->
+<!--        // METHOD 2: FULL FORM EDITING-->
+<!--        // ==========================================-->
+
+<!--        // Full Edit Button Click-->
+<!--        $(document).on("click", ".full-edit-btn", function() {-->
+<!--            const row = $(this).closest("tr");-->
+<!--            const id = row.data("id");-->
+<!--            const type = currentTab;-->
+
+<!--            // Find data from cache-->
+<!--            const rowData = cache[type].data.find(r => (r.id || r.Id) == id);-->
+<!--            if (!rowData) return alert("Data not found");-->
+
+<!--            // Open Form in Edit Mode-->
+<!--            loadForm(type.slice(0, -1), id, rowData); // type.slice(0,-1) removes 's' (students -> student)-->
+<!--        });-->
+
+<!--        // Delete Button Logic-->
+<!--        $(document).on("click", ".delete-btn", async function() {-->
+<!--            if(!confirm("Delete this record?")) return;-->
+<!--            const id = $(this).closest("tr").data("id");-->
+<!--            const type = currentTab;-->
+
+<!--            try {-->
+<!--                await fetch(`${BASE_URL}/${type}/${id}`, { method: "DELETE" });-->
+<!--                alert("Deleted");-->
+<!--                cache[type] = null; // Reset cache-->
+<!--                loadData(type);-->
+<!--            } catch (e) {-->
+<!--                alert("Delete error");-->
+<!--            }-->
+<!--        });-->
+
+<!--    }); // End Document Ready-->
+
+<!--    // === FORM LOGIC (ADD / FULL EDIT) ===-->
+
+<!--    async function loadForm(type, id = null, data = {}) {-->
+<!--        editingId = id;-->
+
+<!--        // UI Management-->
+<!--        $("#welcomeSection").addClass("d-none");-->
+<!--        $("#dashboardSection").addClass("d-none");-->
+<!--        $("#formSection").removeClass("d-none");-->
+
+<!--        // Title-->
+<!--        const action = id ? "Edit" : "Add";-->
+<!--        $("#formHeader").text(`${action} ${capitalize(type)}`);-->
+
+<!--        try {-->
+<!--            // Fetch metadata-->
+<!--            const res = await fetch(`${BASE_URL}/${type}s/metadata`);-->
+<!--            const json = await res.json();-->
+<!--            const columns = Array.isArray(json) ? json : json.columns;-->
+
+<!--            renderForm(type, columns, data);-->
+
+<!--        } catch (e) {-->
+<!--            console.error(e);-->
+<!--            $("#formContainer").html(`<p class="text-danger">Error loading form structure.</p>`);-->
+<!--        }-->
+<!--    }-->
+
+<!--    function renderForm(type, columns, data) {-->
+<!--        let html = `<form id="dynamicForm">`;-->
+
+<!--        columns.forEach(col => {-->
+<!--            const key = col.name;-->
+<!--            // Hide ID field during edit, or show as readonly-->
+<!--            const isId = key.toLowerCase() === 'id';-->
+
+<!--            const val = data[key] || "";-->
+<!--            const inputType = detectType(key);-->
+
+<!--            html += `-->
+<!--                <div class="mb-3">-->
+<!--                    <label class="form-label">${formatLabel(key)}</label>-->
+<!--                    <input-->
+<!--                        type="${inputType}"-->
+<!--                        name="${key}"-->
+<!--                        class="form-control"-->
+<!--                        value="${val}"-->
+<!--                        ${isId && editingId ? 'readonly' : ''}-->
+<!--                    />-->
+<!--                </div>-->
+<!--            `;-->
+<!--        });-->
+
+<!--        html += `-->
+<!--            <div class="d-flex justify-content-end mt-4">-->
+<!--                <button type="button" class="btn btn-secondary me-2" onclick="goBack()">Cancel</button>-->
+<!--                <button type="submit" class="btn btn-success">Save Changes</button>-->
+<!--            </div>-->
+<!--        </form>`;-->
+
+<!--        $("#formContainer").html(html);-->
+
+<!--        // Handle Submit-->
+<!--        $("#dynamicForm").off('submit').on('submit', async function(e) {-->
+<!--            e.preventDefault();-->
+<!--            await handleFormSubmit(type);-->
+<!--        });-->
+<!--    }-->
+
+<!--    async function handleFormSubmit(type) {-->
+<!--        const formData = new FormData(document.getElementById("dynamicForm"));-->
+<!--        const payload = {};-->
+<!--        formData.forEach((value, key) => payload[key] = value);-->
+
+<!--        // If editing, ensure ID is correct-->
+<!--        if(editingId) payload.id = editingId;-->
+
+<!--        const url = editingId-->
+<!--            ? `${BASE_URL}/${type}s/${editingId}`-->
+<!--            : `${BASE_URL}/${type}s`;-->
+
+<!--        const method = editingId ? "PUT" : "POST";-->
+
+<!--        try {-->
+<!--            const res = await fetch(url, {-->
+<!--                method: method,-->
+<!--                headers: { "Content-Type": "application/json" },-->
+<!--                body: JSON.stringify(payload)-->
+<!--            });-->
+
+<!--            if (res.ok) {-->
+<!--                alert(`Saved successfully!`);-->
+<!--                cache[type + "s"] = null; // Clear cache-->
+<!--                goBack();-->
+<!--            } else {-->
+<!--                alert("Error saving data.");-->
+<!--            }-->
+<!--        } catch (e) {-->
+<!--            console.error(e);-->
+<!--            alert("Network error.");-->
+<!--        }-->
+<!--    }-->
+
+<!--    function goBack() {-->
+<!--        $("#formSection").addClass("d-none");-->
+<!--        $("#dashboardSection").removeClass("d-none");-->
+<!--        if(!cache[currentTab]) loadData(currentTab); // Reload if cache was cleared-->
+<!--    }-->
+
+<!--    // === HELPERS ===-->
+
+<!--    function showView(view) {-->
+<!--        $("#welcomeSection").addClass("d-none");-->
+<!--        $("#dashboardSection").addClass("d-none");-->
+<!--        $("#formSection").addClass("d-none");-->
+<!--        if(view === "dashboard") $("#dashboardSection").removeClass("d-none");-->
+<!--        if(view === "welcome") $("#welcomeSection").removeClass("d-none");-->
+<!--    }-->
+
+<!--    function showLoading(show) {-->
+<!--        hideAllStates();-->
+<!--        if(show) $("#loadingState").removeClass("d-none");-->
+<!--    }-->
+
+<!--    function hideAllStates() {-->
+<!--        $("#loadingState").addClass("d-none");-->
+<!--        $("#noDataState").addClass("d-none");-->
+<!--        $("#dataTable").addClass("d-none");-->
+<!--    }-->
+
+<!--    function detectType(key) {-->
+<!--        const k = key.toLowerCase();-->
+<!--        if(k.includes("date")) return "date";-->
+<!--        if(k.includes("email")) return "email";-->
+<!--        if(k.includes("phone")) return "tel";-->
+<!--        if(k.includes("year") || k.includes("age")) return "number";-->
+<!--        return "text";-->
+<!--    }-->
+
+<!--    function formatLabel(str) {-->
+<!--        return str.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase());-->
+<!--    }-->
+
+<!--    function capitalize(str) {-->
+<!--        return str.charAt(0).toUpperCase() + str.slice(1);-->
+<!--    }-->
+
+<!--    function showToast(msg) {-->
+<!--        // Simple console log or implement bootstrap toast-->
+<!--        console.log(msg);-->
+<!--    }-->
+
+<!--</script>-->
+
+<!--&lt;!&ndash; Bootstrap Bundle JS &ndash;&gt;-->
+<!--<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>-->
+
+<!--</body>-->
+<!--</html>-->
+
+<!--version 2-->
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<head>-->
+<!--    <title>EduCloud SPA</title>-->
+
+<!--    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">-->
+<!--    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>-->
+
+<!--    <link rel="icon" href="data:,">-->
+<!--</head>-->
+
+<!--<body>-->
+
+<!--&lt;!&ndash; NAVBAR &ndash;&gt;-->
+<!--<nav class="navbar navbar-expand-lg navbar-dark bg-dark">-->
+<!--    <div class="container-fluid">-->
+<!--        <a class="navbar-brand">EduCloud</a>-->
+
+<!--        <ul class="navbar-nav me-auto">-->
+<!--            <li class="nav-item">-->
+<!--                <a class="nav-link" id="navDashboard">Dashboard</a>-->
+<!--            </li>-->
+
+<!--            <li class="nav-item dropdown">-->
+<!--                <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Add</a>-->
+<!--                <ul class="dropdown-menu">-->
+<!--                    <li><a class="dropdown-item" onclick="loadForm('student')">Add Student</a></li>-->
+<!--                    <li><a class="dropdown-item" onclick="loadForm('teacher')">Add Teacher</a></li>-->
+<!--                    <li><a class="dropdown-item" onclick="loadForm('parent')">Add Parent</a></li>-->
+<!--                </ul>-->
+<!--            </li>-->
+<!--        </ul>-->
+<!--    </div>-->
+<!--</nav>-->
+
+<!--<div class="container mt-4">-->
+
+<!--    &lt;!&ndash; Welcome &ndash;&gt;-->
+<!--    <div id="welcomeSection">-->
+<!--        <div class="alert alert-info">Welcome to EduCloud 🚀</div>-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; DASHBOARD &ndash;&gt;-->
+<!--    <div id="dashboardSection" class="d-none">-->
+
+<!--        &lt;!&ndash; Tabs &ndash;&gt;-->
+<!--        <ul class="nav nav-tabs">-->
+<!--            <li class="nav-item">-->
+<!--                <a class="nav-link active tab-btn" data-type="students">Students</a>-->
+<!--            </li>-->
+<!--            <li class="nav-item">-->
+<!--                <a class="nav-link tab-btn" data-type="parents">Parents</a>-->
+<!--            </li>-->
+<!--            <li class="nav-item">-->
+<!--                <a class="nav-link tab-btn" data-type="teachers">Teachers</a>-->
+<!--            </li>-->
+<!--        </ul>-->
+
+<!--        &lt;!&ndash; States &ndash;&gt;-->
+<!--        <div class="mt-3">-->
+
+<!--            <div id="loadingState" class="text-center d-none">-->
+<!--                <div class="spinner-border"></div>-->
+<!--            </div>-->
+
+<!--            <table class="table table-bordered d-none" id="dataTable">-->
+<!--                <thead></thead>-->
+<!--                <tbody></tbody>-->
+<!--            </table>-->
+
+<!--            <div id="noDataState" class="alert alert-warning d-none">-->
+<!--                No Data Available-->
+<!--            </div>-->
+
+<!--        </div>-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; FORM SECTION &ndash;&gt;-->
+<!--    <div id="formSection" class="d-none">-->
+<!--        <div id="formContainer"></div>-->
+<!--    </div>-->
+
+<!--</div>-->
+
+<!--<script>-->
+
+<!--    const BASE_URL = "http://localhost:8080/api";-->
+
+<!--    $(function () {-->
+
+<!--        const API = {-->
+<!--            students: `${BASE_URL}/students`,-->
+<!--            parents: `${BASE_URL}/parents`,-->
+<!--            teachers: `${BASE_URL}/teachers`-->
+<!--        };-->
+
+<!--        let cache = {-->
+<!--            students: null,-->
+<!--            parents: null,-->
+<!--            teachers: null-->
+<!--        };-->
+
+<!--        let currentTab = "students";-->
+
+<!--        // DASHBOARD NAV-->
+<!--        $("#navDashboard").click(function () {-->
+<!--            $("#welcomeSection").addClass("d-none");-->
+<!--            $("#formSection").addClass("d-none");-->
+<!--            $("#dashboardSection").removeClass("d-none");-->
+
+<!--            loadData(currentTab);-->
+<!--        });-->
+
+<!--        // TAB SWITCH-->
+<!--        $(".tab-btn").click(function () {-->
+<!--            $(".tab-btn").removeClass("active");-->
+<!--            $(this).addClass("active");-->
+
+<!--            currentTab = $(this).data("type");-->
+<!--            loadData(currentTab);-->
+<!--        });-->
+
+<!--        // LOAD TABLE DATA-->
+<!--        function loadData(type) {-->
+
+<!--            if (cache[type]) {-->
+<!--                renderTable(cache[type]);-->
+<!--                return;-->
+<!--            }-->
+
+<!--            showLoading();-->
+
+<!--            $.ajax({-->
+<!--                url: API[type],-->
+<!--                method: "GET",-->
+<!--                success: function (res) {-->
+<!--                    cache[type] = res;-->
+<!--                    renderTable(res);-->
+<!--                },-->
+<!--                error: function () {-->
+<!--                    hideAll();-->
+<!--                }-->
+<!--            });-->
+<!--        }-->
+
+<!--        // RENDER TABLE-->
+<!--        function renderTable(res) {-->
+
+<!--            hideAll();-->
+
+<!--            let columns = res.columns || [];-->
+<!--            let data = res.data || [];-->
+
+<!--            if (columns.length === 0) {-->
+<!--                showNoData();-->
+<!--                return;-->
+<!--            }-->
+
+<!--            let thead = "<tr>";-->
+<!--            columns.forEach(col => {-->
+<!--                thead += `<th>${formatLabel(col.name)}</th>`;-->
+<!--            });-->
+<!--            thead += "</tr>";-->
+
+<!--            $("#dataTable thead").html(thead);-->
+
+<!--            if (data.length === 0) {-->
+<!--                $("#dataTable tbody").html("");-->
+<!--                $("#dataTable").removeClass("d-none");-->
+<!--                $("#noDataState").removeClass("d-none");-->
+<!--                return;-->
+<!--            }-->
+
+<!--            let tbody = "";-->
+
+<!--            data.forEach(row => {-->
+<!--                tbody += "<tr>";-->
+<!--                columns.forEach(col => {-->
+<!--                    tbody += `<td>${row[col.name] ?? "-"}</td>`;-->
+<!--                });-->
+<!--                tbody += "</tr>";-->
+<!--            });-->
+
+<!--            $("#dataTable tbody").html(tbody);-->
+<!--            $("#dataTable").removeClass("d-none");-->
+<!--        }-->
+
+<!--        function showLoading() {-->
+<!--            hideAll();-->
+<!--            $("#loadingState").removeClass("d-none");-->
+<!--        }-->
+
+<!--        function showNoData() {-->
+<!--            hideAll();-->
+<!--            $("#noDataState").removeClass("d-none");-->
+<!--        }-->
+
+<!--        function hideAll() {-->
+<!--            $("#loadingState").addClass("d-none");-->
+<!--            $("#noDataState").addClass("d-none");-->
+<!--            $("#dataTable").addClass("d-none");-->
+<!--        }-->
+
+<!--    });-->
+
+<!--    // ==============================-->
+<!--    // FORM LOGIC-->
+<!--    // ==============================-->
+
+<!--&lt;!&ndash;    async function loadForm(type) {&ndash;&gt;-->
+<!--&lt;!&ndash;        try {&ndash;&gt;-->
+<!--&lt;!&ndash;            $("#welcomeSection").addClass("d-none");&ndash;&gt;-->
+<!--&lt;!&ndash;            $("#dashboardSection").addClass("d-none");&ndash;&gt;-->
+<!--&lt;!&ndash;            $("#formSection").removeClass("d-none");&ndash;&gt;-->
+<!--&lt;!&ndash;    &ndash;&gt;-->
+<!--&lt;!&ndash;            const res = await fetch(`${BASE_URL}/${type}s/metadata`);&ndash;&gt;-->
+<!--&lt;!&ndash;            if (!res.ok) throw new Error("Metadata fetch failed");&ndash;&gt;-->
+<!--&lt;!&ndash;    &ndash;&gt;-->
+<!--&lt;!&ndash;            const json = await res.json();&ndash;&gt;-->
+<!--&lt;!&ndash;            renderForm(type, json.columns);&ndash;&gt;-->
+<!--&lt;!&ndash;    &ndash;&gt;-->
+<!--&lt;!&ndash;        } catch (err) {&ndash;&gt;-->
+<!--&lt;!&ndash;            console.error(err);&ndash;&gt;-->
+<!--&lt;!&ndash;            document.getElementById("formContainer").innerHTML =&ndash;&gt;-->
+<!--&lt;!&ndash;                `<p class="text-danger">Error loading form</p>`;&ndash;&gt;-->
+<!--&lt;!&ndash;        }&ndash;&gt;-->
+<!--&lt;!&ndash;    }&ndash;&gt;-->
+
+
+<!--    async function loadForm(type) {-->
+<!--    try {-->
+<!--        $("#welcomeSection").addClass("d-none");-->
+<!--        $("#dashboardSection").addClass("d-none");-->
+<!--        $("#formSection").removeClass("d-none");-->
+
+<!--        const res = await fetch(`${BASE_URL}/${type}s/metadata`);-->
+<!--        if (!res.ok) throw new Error("Metadata fetch failed");-->
+
+<!--        const json = await res.json();-->
+
+<!--        // ✅ FIX HERE-->
+<!--        const columns = Array.isArray(json) ? json : json.columns;-->
+
+<!--        if (!columns) throw new Error("Invalid metadata format");-->
+
+<!--        renderForm(type, columns);-->
+
+<!--    } catch (err) {-->
+<!--        console.error(err);-->
+<!--        document.getElementById("formContainer").innerHTML =-->
+<!--            `<p class="text-danger">Error loading form</p>`;-->
+<!--    }-->
+<!--}-->
+<!--    // RENDER FORM-->
+<!--    function renderForm(type, columns) {-->
+
+<!--        const container = document.getElementById("formContainer");-->
+
+<!--        let html = `<h3 class="mb-3">Add ${capitalize(type)}</h3>`;-->
+<!--        html += `<form id="${type}Form">`;-->
+
+<!--        columns.forEach(col => {-->
+<!--            html += `-->
+<!--                <div class="mb-3">-->
+<!--                    <label class="form-label">${formatLabel(col.name)}</label>-->
+<!--                    <input name="${col.name}" type="${detectType(col.name)}" class="form-control"/>-->
+<!--                </div>-->
+<!--            `;-->
+<!--        });-->
+
+<!--        html += `-->
+<!--            <button type="submit" class="btn btn-primary">Submit</button>-->
+<!--            <button type="button" class="btn btn-secondary ms-2" onclick="goToDashboard()">Back</button>-->
+<!--        </form>-->
+<!--        `;-->
+
+<!--        container.innerHTML = html;-->
+
+<!--        document-->
+<!--            .getElementById(`${type}Form`)-->
+<!--            .addEventListener("submit", (e) => handleSubmit(e, type));-->
+<!--    }-->
+
+<!--    // SUBMIT-->
+<!--    async function handleSubmit(e, type) {-->
+<!--        e.preventDefault();-->
+
+<!--        const formData = new FormData(e.target);-->
+<!--        const data = {};-->
+
+<!--        formData.forEach((value, key) => {-->
+<!--            data[key] = value;-->
+<!--        });-->
+
+<!--        try {-->
+<!--            const res = await fetch(`${BASE_URL}/${type}s`, {-->
+<!--                method: "POST",-->
+<!--                headers: { "Content-Type": "application/json" },-->
+<!--                body: JSON.stringify(data)-->
+<!--            });-->
+
+<!--            if (!res.ok) throw new Error("Save failed");-->
+
+<!--            alert(`${capitalize(type)} saved successfully`);-->
+<!--            e.target.reset();-->
+
+<!--        } catch (err) {-->
+<!--            console.error(err);-->
+<!--            alert("Error saving data");-->
+<!--        }-->
+<!--    }-->
+
+<!--    // ==============================-->
+<!--    // HELPERS-->
+<!--    // ==============================-->
+
+<!--    function goToDashboard() {-->
+<!--        $("#formSection").addClass("d-none");-->
+<!--        $("#dashboardSection").removeClass("d-none");-->
+<!--    }-->
+
+<!--    function detectType(field) {-->
+<!--        const f = field.toLowerCase();-->
+<!--        if (f.includes("date")) return "date";-->
+<!--        if (f.includes("email")) return "email";-->
+<!--        if (f.includes("phone")) return "tel";-->
+<!--        if (f.includes("years") || f.includes("number")) return "number";-->
+<!--        return "text";-->
+<!--    }-->
+
+<!--    function formatLabel(field) {-->
+<!--        return field-->
+<!--            .replace(/([A-Z])/g, " $1")-->
+<!--            .replace(/^./, s => s.toUpperCase());-->
+<!--    }-->
+
+<!--    function capitalize(str) {-->
+<!--        return str.charAt(0).toUpperCase() + str.slice(1);-->
+<!--    }-->
+
+<!--</script>-->
+
+<!--<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>-->
+
+<!--</body>-->
+<!--</html>-->
+
+<!--version-3-->
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<head>-->
+<!--    <title>EduCloud SPA</title>-->
+
+<!--    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">-->
+<!--    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>-->
+
+<!--    <link rel="icon" href="data:,">-->
+<!--</head>-->
+
+<!--<body>-->
+
+<!--&lt;!&ndash; NAVBAR &ndash;&gt;-->
+<!--<nav class="navbar navbar-dark bg-dark">-->
+<!--    <div class="container-fluid">-->
+<!--        <span class="navbar-brand">EduCloud</span>-->
+
+<!--        <ul class="navbar-nav flex-row gap-3">-->
+<!--            <li><a class="nav-link text-white" id="navDashboard">Dashboard</a></li>-->
+
+<!--            <li class="dropdown">-->
+<!--                <a class="nav-link dropdown-toggle text-white" data-bs-toggle="dropdown">Add</a>-->
+<!--                <ul class="dropdown-menu">-->
+<!--                    <li><a class="dropdown-item" onclick="loadForm('student')">Student</a></li>-->
+<!--                    <li><a class="dropdown-item" onclick="loadForm('teacher')">Teacher</a></li>-->
+<!--                    <li><a class="dropdown-item" onclick="loadForm('parent')">Parent</a></li>-->
+<!--                </ul>-->
+<!--            </li>-->
+<!--        </ul>-->
+<!--    </div>-->
+<!--</nav>-->
+
+<!--<div class="container mt-4">-->
+
+<!--    <div id="welcomeSection">-->
+<!--        <div class="alert alert-info">Welcome 🚀</div>-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; DASHBOARD &ndash;&gt;-->
+<!--    <div id="dashboardSection" class="d-none">-->
+
+<!--        <ul class="nav nav-tabs">-->
+<!--            <li class="nav-item"><a class="nav-link active tab-btn" data-type="students">Students</a></li>-->
+<!--            <li class="nav-item"><a class="nav-link tab-btn" data-type="parents">Parents</a></li>-->
+<!--            <li class="nav-item"><a class="nav-link tab-btn" data-type="teachers">Teachers</a></li>-->
+<!--        </ul>-->
+
+<!--        <div class="mt-3">-->
+<!--            <div id="loadingState" class="text-center d-none">-->
+<!--                <div class="spinner-border"></div>-->
+<!--            </div>-->
+
+<!--            <table class="table table-bordered d-none" id="dataTable">-->
+<!--                <thead></thead>-->
+<!--                <tbody></tbody>-->
+<!--            </table>-->
+
+<!--            <div id="noDataState" class="alert alert-warning d-none">-->
+<!--                No Data Available-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; FORM &ndash;&gt;-->
+<!--    <div id="formSection" class="d-none">-->
+<!--        <div id="formContainer"></div>-->
+<!--    </div>-->
+
+<!--</div>-->
+
+<!--<script>-->
+
+<!--    const BASE_URL = "http://localhost:8080/api";-->
+
+<!--    let currentTab = "students";-->
+
+<!--    let cache = {-->
+<!--        students: null,-->
+<!--        parents: null,-->
+<!--        teachers: null-->
+<!--    };-->
+
+<!--    $(function () {-->
+
+<!--        $("#navDashboard").click(() => {-->
+<!--            showDashboard();-->
+<!--            loadData(currentTab);-->
+<!--        });-->
+
+<!--        $(".tab-btn").click(function () {-->
+<!--            $(".tab-btn").removeClass("active");-->
+<!--            $(this).addClass("active");-->
+
+<!--            currentTab = $(this).data("type");-->
+<!--            loadData(currentTab);-->
+<!--        });-->
+
+<!--    });-->
+
+<!--    // ================= TABLE =================-->
+
+<!--    function loadData(type) {-->
+
+<!--        if (cache[type]) {-->
+<!--            renderTable(cache[type]);-->
+<!--            return;-->
+<!--        }-->
+
+<!--        showLoading();-->
+
+<!--        $.get(`${BASE_URL}/${type}`, res => {-->
+<!--            cache[type] = res;-->
+<!--            renderTable(res);-->
+<!--        }).fail(() => hideAll());-->
+<!--    }-->
+
+<!--    function renderTable(res) {-->
+
+<!--        hideAll();-->
+
+<!--        const columns = res.columns || [];-->
+<!--        const data = res.data || [];-->
+
+<!--        if (!columns.length) return showNoData();-->
+
+<!--        let thead = "<tr>";-->
+<!--        columns.forEach(c => thead += `<th>${formatLabel(c.name)}</th>`);-->
+<!--        thead += "<th>Actions</th></tr>";-->
+
+<!--        $("#dataTable thead").html(thead);-->
+
+<!--        let tbody = "";-->
+
+<!--        data.forEach(row => {-->
+
+<!--            tbody += `<tr data-id="${row.id}">`;-->
+
+<!--            columns.forEach(col => {-->
+<!--                tbody += `<td data-field="${col.name}">${row[col.name] ?? "-"}</td>`;-->
+<!--            });-->
+
+<!--            tbody += `-->
+<!--            <td>-->
+<!--                <button class="btn btn-sm btn-warning edit-btn">Edit</button>-->
+<!--                <button class="btn btn-sm btn-success save-btn d-none">Save</button>-->
+<!--                <button class="btn btn-sm btn-secondary cancel-btn d-none">Cancel</button>-->
+<!--                <button class="btn btn-sm btn-danger delete-btn">Delete</button>-->
+<!--            </td>`;-->
+
+<!--            tbody += "</tr>";-->
+<!--        });-->
+
+<!--        $("#dataTable tbody").html(tbody);-->
+<!--        $("#dataTable").removeClass("d-none");-->
+
+<!--        if (!data.length) $("#noDataState").removeClass("d-none");-->
+<!--    }-->
+
+<!--    // ================= EDIT =================-->
+
+<!--    $(document).on("click", ".edit-btn", function () {-->
+
+<!--        const row = $(this).closest("tr");-->
+
+<!--        row.find("td[data-field]").each(function () {-->
+<!--            const value = $(this).text();-->
+<!--            const field = $(this).data("field");-->
+
+<!--            $(this).html(`<input class="form-control form-control-sm" data-field="${field}" value="${value !== '-' ? value : ''}">`);-->
+<!--        });-->
+
+<!--        toggleButtons(row, true);-->
+<!--    });-->
+
+<!--    $(document).on("click", ".cancel-btn", () => loadData(currentTab));-->
+
+<!--    $(document).on("click", ".save-btn", async function () {-->
+
+<!--        const row = $(this).closest("tr");-->
+<!--        const id = row.data("id");-->
+
+<!--        const updated = {};-->
+
+<!--        row.find("input").each(function () {-->
+<!--            updated[$(this).data("field")] = $(this).val();-->
+<!--        });-->
+
+<!--        try {-->
+<!--            await fetch(`${BASE_URL}/${currentTab}/${id}`, {-->
+<!--                method: "PUT",-->
+<!--                headers: {"Content-Type": "application/json"},-->
+<!--                body: JSON.stringify(updated)-->
+<!--            });-->
+
+<!--            cache[currentTab] = null;-->
+<!--            loadData(currentTab);-->
+
+<!--        } catch {-->
+<!--            alert("Update failed");-->
+<!--        }-->
+<!--    });-->
+
+<!--    // ================= DELETE =================-->
+
+<!--    $(document).on("click", ".delete-btn", async function () {-->
+
+<!--        if (!confirm("Delete this record?")) return;-->
+
+<!--        const id = $(this).closest("tr").data("id");-->
+
+<!--        try {-->
+<!--            await fetch(`${BASE_URL}/${currentTab}/${id}`, { method: "DELETE" });-->
+
+<!--            cache[currentTab] = null;-->
+<!--            loadData(currentTab);-->
+
+<!--        } catch {-->
+<!--            alert("Delete failed");-->
+<!--        }-->
+<!--    });-->
+
+<!--    // ================= FORM =================-->
+
+<!--    async function loadForm(type) {-->
+
+<!--        try {-->
+<!--            hideAllSections();-->
+<!--            $("#formSection").removeClass("d-none");-->
+
+<!--            const res = await fetch(`${BASE_URL}/${type}s/metadata`);-->
+<!--            const json = await res.json();-->
+
+<!--            const columns = Array.isArray(json) ? json : json.columns;-->
+
+<!--            renderForm(type, columns);-->
+
+<!--        } catch {-->
+<!--            $("#formContainer").html(`<p class="text-danger">Error loading form</p>`);-->
+<!--        }-->
+<!--    }-->
+
+<!--    function renderForm(type, columns) {-->
+
+<!--        let html = `<h3>Add ${capitalize(type)}</h3><form id="form">`;-->
+
+<!--        columns.forEach(c => {-->
+<!--            html += `-->
+<!--            <div class="mb-3">-->
+<!--                <label>${formatLabel(c.name)}</label>-->
+<!--                <input name="${c.name}" class="form-control">-->
+<!--            </div>`;-->
+<!--        });-->
+
+<!--        html += `-->
+<!--        <button class="btn btn-primary">Submit</button>-->
+<!--        <button type="button" class="btn btn-secondary ms-2" onclick="showDashboard()">Back</button>-->
+<!--        </form>`;-->
+
+<!--        $("#formContainer").html(html);-->
+
+<!--        $("#form").submit(async function (e) {-->
+<!--            e.preventDefault();-->
+
+<!--            const data = {};-->
+<!--            new FormData(this).forEach((v,k)=>data[k]=v);-->
+
+<!--            await fetch(`${BASE_URL}/${type}s`, {-->
+<!--                method:"POST",-->
+<!--                headers:{"Content-Type":"application/json"},-->
+<!--                body: JSON.stringify(data)-->
+<!--            });-->
+
+<!--            alert("Saved");-->
+<!--            showDashboard();-->
+<!--            cache[`${type}s`] = null;-->
+<!--            loadData(`${type}s`);-->
+<!--        });-->
+<!--    }-->
+
+<!--    // ================= HELPERS =================-->
+
+<!--    function toggleButtons(row, edit) {-->
+<!--        row.find(".edit-btn,.delete-btn").toggleClass("d-none", edit);-->
+<!--        row.find(".save-btn,.cancel-btn").toggleClass("d-none", !edit);-->
+<!--    }-->
+
+<!--    function showDashboard() {-->
+<!--        hideAllSections();-->
+<!--        $("#dashboardSection").removeClass("d-none");-->
+<!--    }-->
+
+<!--    function hideAllSections() {-->
+<!--        $("#welcomeSection,#dashboardSection,#formSection").addClass("d-none");-->
+<!--    }-->
+
+<!--    function showLoading() {-->
+<!--        hideAll();-->
+<!--        $("#loadingState").removeClass("d-none");-->
+<!--    }-->
+
+<!--    function showNoData() {-->
+<!--        hideAll();-->
+<!--        $("#noDataState").removeClass("d-none");-->
+<!--    }-->
+
+<!--    function hideAll() {-->
+<!--        $("#loadingState,#noDataState,#dataTable").addClass("d-none");-->
+<!--    }-->
+
+<!--    function formatLabel(s){-->
+<!--        return s.replace(/([A-Z])/g," $1").replace(/^./,c=>c.toUpperCase());-->
+<!--    }-->
+
+<!--    function capitalize(s){-->
+<!--        return s.charAt(0).toUpperCase()+s.slice(1);-->
+<!--    }-->
+
+<!--</script>-->
+
+<!--<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>-->
+
+<!--</body>-->
+<!--</html>-->
+
+<!--version-5 - final-inline-form-edit-form-->
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<head>-->
+<!--    <title>EduCloud SPA</title>-->
+<!--    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">-->
+<!--    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>-->
+<!--    <link rel="icon" href="data:,">-->
+<!--    <style>-->
+<!--        td.editable-cell { cursor:pointer; transition: background 0.2s; }-->
+<!--        td.editable-cell:hover { background:#fff3cd; }-->
+<!--        .form-card { border:1px solid #e0e0e0; border-radius:8px; box-shadow:0 4px 6px rgba(0,0,0,0.1); }-->
+<!--    </style>-->
+<!--</head>-->
+<!--<body>-->
+
+<!--&lt;!&ndash; NAVBAR &ndash;&gt;-->
+<!--<nav class="navbar navbar-expand-lg navbar-dark bg-dark">-->
+<!--    <div class="container-fluid">-->
+<!--        <span class="navbar-brand">EduCloud</span>-->
+<!--        <ul class="navbar-nav flex-row gap-3">-->
+<!--            <li><a class="nav-link text-white" id="navDashboard">Dashboard</a></li>-->
+<!--            <li class="dropdown">-->
+<!--                <a class="nav-link dropdown-toggle text-white" data-bs-toggle="dropdown">Add</a>-->
+<!--                <ul class="dropdown-menu">-->
+<!--                    <li><a class="dropdown-item" onclick="loadForm('student')">Student</a></li>-->
+<!--                    <li><a class="dropdown-item" onclick="loadForm('teacher')">Teacher</a></li>-->
+<!--                    <li><a class="dropdown-item" onclick="loadForm('parent')">Parent</a></li>-->
+<!--                </ul>-->
+<!--            </li>-->
+<!--        </ul>-->
+<!--    </div>-->
+<!--</nav>-->
+
+<!--<div class="container mt-4">-->
+
+<!--    &lt;!&ndash; Welcome &ndash;&gt;-->
+<!--    <div id="welcomeSection">-->
+<!--        <div class="alert alert-info text-center">Welcome to EduCloud 🚀</div>-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; Dashboard &ndash;&gt;-->
+<!--    <div id="dashboardSection" class="d-none">-->
+<!--        <ul class="nav nav-tabs">-->
+<!--            <li class="nav-item"><a class="nav-link active tab-btn" data-type="students">Students</a></li>-->
+<!--            <li class="nav-item"><a class="nav-link tab-btn" data-type="parents">Parents</a></li>-->
+<!--            <li class="nav-item"><a class="nav-link tab-btn" data-type="teachers">Teachers</a></li>-->
+<!--        </ul>-->
+
+<!--        <div class="mt-3">-->
+<!--            <div id="loadingState" class="text-center d-none py-5"><div class="spinner-border text-primary"></div></div>-->
+
+<!--            <div class="table-responsive">-->
+<!--                <table class="table table-bordered table-hover d-none" id="dataTable">-->
+<!--                    <thead class="table-dark"></thead>-->
+<!--                    <tbody></tbody>-->
+<!--                </table>-->
+<!--            </div>-->
+
+<!--            <div id="noDataState" class="alert alert-warning text-center d-none">No Data Available</div>-->
+<!--        </div>-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; Form Section &ndash;&gt;-->
+<!--    <div id="formSection" class="d-none">-->
+<!--        <div class="form-card p-3" id="formContainer"></div>-->
+<!--    </div>-->
+
+<!--</div>-->
+
+<!--<script>-->
+<!--    const BASE_URL = "http://localhost:8080/api";-->
+<!--    let currentTab = "students";-->
+<!--    let cache = { students:null, parents:null, teachers:null };-->
+
+<!--    // === NAVIGATION ===-->
+<!--    $(function() {-->
+<!--        $("#navDashboard").click(() => { showDashboard(); loadData(currentTab); });-->
+<!--        $(".tab-btn").click(function() {-->
+<!--            $(".tab-btn").removeClass("active");-->
+<!--            $(this).addClass("active");-->
+<!--            currentTab = $(this).data("type");-->
+<!--            loadData(currentTab);-->
+<!--        });-->
+<!--    });-->
+
+<!--    // === DATA TABLE ===-->
+<!--    function loadData(type){-->
+<!--        if(cache[type]) { renderTable(cache[type]); return; }-->
+<!--        showLoading();-->
+<!--        $.get(`${BASE_URL}/${type}`, res => { cache[type]=res; renderTable(res); }).fail(hideAll);-->
+<!--    }-->
+
+<!--    function renderTable(res){-->
+<!--        hideAll();-->
+<!--        const columns = res.columns||[];-->
+<!--        const data = res.data||[];-->
+<!--        if(!columns.length){ showNoData(); return; }-->
+
+<!--        let thead = "<tr>";-->
+<!--        columns.forEach(c=>thead+=`<th>${formatLabel(c.name)}</th>`);-->
+<!--        thead += "<th>Actions</th></tr>";-->
+<!--        $("#dataTable thead").html(thead);-->
+
+<!--        let tbody="";-->
+<!--        data.forEach(row=>{-->
+<!--            tbody+=`<tr>`;-->
+<!--            columns.forEach(c=>{-->
+<!--                tbody+=`<td class="editable-cell" data-field="${c.name}">${row[c.name]??"-"}</td>`;-->
+<!--            });-->
+<!--            tbody+=`<td>-->
+<!--                <button class="btn btn-sm btn-warning edit-btn">Edit</button>-->
+<!--                <button class="btn btn-sm btn-success save-btn d-none">Save</button>-->
+<!--                <button class="btn btn-sm btn-secondary cancel-btn d-none">Cancel</button>-->
+<!--                <button class="btn btn-sm btn-danger delete-btn">Delete</button>-->
+<!--            </td>`;-->
+<!--            tbody+="</tr>";-->
+<!--        });-->
+<!--        $("#dataTable tbody").html(tbody);-->
+<!--        $("#dataTable").removeClass("d-none");-->
+<!--        if(!data.length) $("#noDataState").removeClass("d-none");-->
+<!--    }-->
+
+<!--    // === INLINE CELL EDIT ===-->
+<!--    $(document).on("click","td.editable-cell",function(){-->
+<!--        const cell=$(this);-->
+<!--        const original=cell.text();-->
+<!--        const field=cell.data("field");-->
+<!--        $("td.editable-cell input").each(function(){-->
+<!--            $(this).parent().text($(this).attr("data-original-val"));-->
+<!--            $(this).closest("tr").find(".save-btn").addClass("d-none");-->
+<!--            $(this).closest("tr").find(".edit-btn, .delete-btn").removeClass("d-none");-->
+<!--        });-->
+<!--        cell.html(`<input class="form-control form-control-sm" data-original-val="${original}" value="${original}">`);-->
+<!--        const row=cell.closest("tr");-->
+<!--        row.find(".save-btn").removeClass("d-none");-->
+<!--        row.find(".edit-btn, .delete-btn").addClass("d-none");-->
+
+<!--        cell.find("input").focus().select().on("keyup",function(e){-->
+<!--            if(e.key==="Enter") row.find(".save-btn").click();-->
+<!--            if(e.key==="Escape"){ cell.text(original); row.find(".save-btn").addClass("d-none"); row.find(".edit-btn, .delete-btn").removeClass("d-none"); }-->
+<!--        });-->
+<!--    });-->
+
+<!--    // === SAVE INLINE EDIT ===-->
+<!--    $(document).on("click",".save-btn",async function(){-->
+<!--        const row=$(this).closest("tr");-->
+<!--        const updated={};-->
+<!--        row.find("input").each(function(){ updated[$(this).data("field")]=$(this).val(); });-->
+<!--        try{-->
+<!--            await fetch(`${BASE_URL}/${currentTab}/dummy`,{method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(updated)});-->
+<!--            row.find("td.editable-cell input").each(function(){ $(this).parent().text($(this).val()); });-->
+<!--            row.find(".save-btn").addClass("d-none");-->
+<!--            row.find(".edit-btn, .delete-btn").removeClass("d-none");-->
+<!--        }catch{ alert("Update failed"); }-->
+<!--    });-->
+
+<!--    // === FULL ROW EDIT ===-->
+<!--    $(document).on("click",".edit-btn",function(){-->
+<!--        const row=$(this).closest("tr");-->
+<!--        const rowData={};-->
+<!--        row.find("td.editable-cell").each(function(){ rowData[$(this).data("field")]=$(this).text(); });-->
+<!--        loadForm(currentTab.slice(0,-1), null, rowData);-->
+<!--    });-->
+
+<!--    // === DELETE ===-->
+<!--    $(document).on("click",".delete-btn",async function(){-->
+<!--        if(!confirm("Delete this record?")) return;-->
+<!--        const row=$(this).closest("tr");-->
+<!--        try{-->
+<!--            await fetch(`${BASE_URL}/${currentTab}/dummy`,{method:"DELETE"});-->
+<!--            cache[currentTab]=null;-->
+<!--            loadData(currentTab);-->
+<!--        }catch{ alert("Delete failed"); }-->
+<!--    });-->
+
+<!--    // === FORM LOGIC ===-->
+<!--    async function loadForm(type,id=null,data={}) {-->
+<!--        hideAllSections();-->
+<!--        $("#formSection").removeClass("d-none");-->
+<!--        try{-->
+<!--            const res=await fetch(`${BASE_URL}/${type}s/metadata`);-->
+<!--            const json=await res.json();-->
+<!--            const columns=Array.isArray(json)?json:json.columns;-->
+<!--            renderForm(type, columns, data);-->
+<!--        }catch{ $("#formContainer").html(`<p class="text-danger">Error loading form</p>`); }-->
+<!--    }-->
+
+<!--    function renderForm(type,columns,data){-->
+<!--        let html=`<h3>${Object.keys(data).length?"Edit":"Add"} ${capitalize(type)}</h3><form id="form">`;-->
+<!--        columns.forEach(c=>{-->
+<!--            html+=`<div class="mb-3">-->
+<!--                <label>${formatLabel(c.name)}</label>-->
+<!--                <input name="${c.name}" class="form-control" value="${data[c.name]??''}">-->
+<!--            </div>`;-->
+<!--        });-->
+<!--        html+=`<button class="btn btn-primary">Submit</button>-->
+<!--               <button type="button" class="btn btn-secondary ms-2" onclick="showDashboard()">Back</button></form>`;-->
+<!--        $("#formContainer").html(html);-->
+
+<!--        $("#form").submit(async function(e){-->
+<!--            e.preventDefault();-->
+<!--            const formData={};-->
+<!--            new FormData(this).forEach((v,k)=>formData[k]=v);-->
+<!--            await fetch(`${BASE_URL}/${type}s`,{method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(formData)});-->
+<!--            alert("Saved");-->
+<!--            showDashboard();-->
+<!--            cache[`${type}s`]=null;-->
+<!--            loadData(`${type}s`);-->
+<!--        });-->
+<!--    }-->
+
+<!--    // === HELPERS ===-->
+<!--    function showDashboard(){ hideAllSections(); $("#dashboardSection").removeClass("d-none"); }-->
+<!--    function hideAllSections(){ $("#welcomeSection,#dashboardSection,#formSection").addClass("d-none"); }-->
+<!--    function showLoading(){ hideAll(); $("#loadingState").removeClass("d-none"); }-->
+<!--    function showNoData(){ hideAll(); $("#noDataState").removeClass("d-none"); }-->
+<!--    function hideAll(){ $("#loadingState,#noDataState,#dataTable").addClass("d-none"); }-->
+<!--    function formatLabel(s){ return s.replace(/([A-Z])/g," $1").replace(/^./,c=>c.toUpperCase()); }-->
+<!--    function capitalize(s){ return s.charAt(0).toUpperCase()+s.slice(1); }-->
+<!--</script>-->
+
+<!--<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>-->
+<!--</body>-->
+<!--</html>-->
+
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<head>-->
+<!--    <title>EduCloud SPA</title>-->
+<!--    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">-->
+<!--    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>-->
+<!--    <link rel="icon" href="data:,">-->
+<!--    <style>-->
+<!--        td.editable-cell { cursor:pointer; background-color: #fff; }-->
+<!--        td.editable-cell:hover { background-color: #fff3cd; }-->
+<!--        .inline-input { width:100%; height:100%; padding:2px 5px; border:1px solid #80bdff; }-->
+<!--    </style>-->
+<!--</head>-->
+<!--<body>-->
+
+<!--&lt;!&ndash; NAVBAR &ndash;&gt;-->
+<!--<nav class="navbar navbar-dark bg-dark">-->
+<!--    <div class="container-fluid">-->
+<!--        <span class="navbar-brand">EduCloud</span>-->
+<!--        <ul class="navbar-nav flex-row gap-3">-->
+<!--            <li><a class="nav-link text-white" id="navDashboard">Dashboard</a></li>-->
+<!--            <li class="dropdown">-->
+<!--                <a class="nav-link dropdown-toggle text-white" data-bs-toggle="dropdown">Add</a>-->
+<!--                <ul class="dropdown-menu">-->
+<!--                    <li><a class="dropdown-item" onclick="loadForm('student')">Student</a></li>-->
+<!--                    <li><a class="dropdown-item" onclick="loadForm('teacher')">Teacher</a></li>-->
+<!--                    <li><a class="dropdown-item" onclick="loadForm('parent')">Parent</a></li>-->
+<!--                </ul>-->
+<!--            </li>-->
+<!--        </ul>-->
+<!--    </div>-->
+<!--</nav>-->
+
+<!--<div class="container mt-4">-->
+
+<!--    <div id="welcomeSection">-->
+<!--        <div class="alert alert-info">Welcome 🚀</div>-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; DASHBOARD &ndash;&gt;-->
+<!--    <div id="dashboardSection" class="d-none">-->
+<!--        <button class="btn btn-sm btn-outline-secondary mb-2" id="filterColumnsBtn">-->
+<!--            Column Filter-->
+<!--        </button>-->
+
+<!--        <ul class="nav nav-tabs">-->
+<!--            <li class="nav-item"><a class="nav-link active tab-btn" data-type="students">Students</a></li>-->
+<!--            <li class="nav-item"><a class="nav-link tab-btn" data-type="parents">Parents</a></li>-->
+<!--            <li class="nav-item"><a class="nav-link tab-btn" data-type="teachers">Teachers</a></li>-->
+<!--        </ul>-->
+
+<!--        <div class="mt-3">-->
+<!--            <div id="loadingState" class="text-center d-none">-->
+<!--                <div class="spinner-border"></div>-->
+<!--            </div>-->
+
+<!--            <table class="table table-bordered d-none" id="dataTable">-->
+<!--                <thead></thead>-->
+<!--                <tbody></tbody>-->
+<!--            </table>-->
+
+<!--            <div id="noDataState" class="alert alert-warning d-none">-->
+<!--                No Data Available-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; FORM &ndash;&gt;-->
+<!--    <div id="formSection" class="d-none">-->
+<!--        <div id="formContainer"></div>-->
+<!--    </div>-->
+
+<!--</div>-->
+
+<!--<script>-->
+<!--    const BASE_URL = "http://localhost:8080/api";-->
+<!--    let currentTab = "students";-->
+<!--    let cache = { students:null, parents:null, teachers:null };-->
+
+<!--    // ==================== DASHBOARD NAV & TAB ====================-->
+<!--    $(function () {-->
+<!--        $("#navDashboard").click(() => {-->
+<!--            showDashboard();-->
+<!--            loadData(currentTab);-->
+<!--        });-->
+
+<!--        $(".tab-btn").click(function () {-->
+<!--            $(".tab-btn").removeClass("active");-->
+<!--            $(this).addClass("active");-->
+<!--            currentTab = $(this).data("type");-->
+<!--            loadData(currentTab);-->
+<!--        });-->
+<!--    });-->
+
+<!--    // ==================== TABLE DATA ====================-->
+<!--    function loadData(type) {-->
+<!--        if(cache[type]) { renderTable(cache[type]); return; }-->
+<!--        showLoading();-->
+
+<!--        $.get(`${BASE_URL}/${type}`, res=>{-->
+<!--            cache[type]=res;-->
+<!--            renderTable(res);-->
+<!--        }).fail(()=>hideAll());-->
+<!--    }-->
+
+<!--    function renderTable(res) {-->
+<!--        hideAll();-->
+<!--        const columns = res.columns||[];-->
+<!--        const data = res.data||[];-->
+
+<!--        if(!columns.length) { showNoData(); return; }-->
+
+<!--        // Table Header-->
+<!--        let thead = "<tr>";-->
+<!--        columns.forEach(c=>thead+=`<th>${formatLabel(c.name)}</th>`);-->
+<!--        thead += "<th>Actions</th></tr>";-->
+<!--        $("#dataTable thead").html(thead);-->
+
+<!--        // Table Body-->
+<!--        let tbody="";-->
+<!--        data.forEach(row=>{-->
+<!--            tbody += `<tr>`;-->
+<!--            columns.forEach(col=>{-->
+<!--                tbody += `<td class="editable-cell" data-field="${col.name}">${row[col.name]??"-"}</td>`;-->
+<!--            });-->
+<!--            tbody += `-->
+<!--            <td>-->
+<!--                <button class="btn btn-sm btn-warning edit-btn">Edit</button>-->
+<!--                <button class="btn btn-sm btn-success save-btn d-none">Save</button>-->
+<!--                <button class="btn btn-sm btn-secondary cancel-btn d-none">Cancel</button>-->
+<!--                <button class="btn btn-sm btn-danger delete-btn">Delete</button>-->
+<!--            </td>`;-->
+<!--            tbody += `</tr>`;-->
+<!--        });-->
+
+<!--        $("#dataTable tbody").html(tbody);-->
+<!--        $("#dataTable").removeClass("d-none");-->
+<!--        if(!data.length) $("#noDataState").removeClass("d-none");-->
+<!--    }-->
+
+<!--    // ==================== INLINE CELL EDIT ====================-->
+<!--    $(document).on("click","td.editable-cell",function(){-->
+<!--        const cell=$(this);-->
+<!--        const val=cell.text();-->
+<!--        cell.html(`<input class="inline-input form-control-sm" value="${val!=='-'?val:''}">`);-->
+<!--        cell.find("input").focus();-->
+<!--        toggleRowButtons(cell.closest("tr"), false, true); // show only save for inline-->
+<!--    });-->
+
+<!--    $(document).on("click",".save-btn",async function(){-->
+<!--        const row=$(this).closest("tr");-->
+<!--        const updated={};-->
+<!--        row.find("td.editable-cell input").each(function(){-->
+<!--            updated[$(this).parent().data("field")]=$(this).val();-->
+<!--        });-->
+<!--        try{-->
+<!--            const id=row.data("id")||0; // currently ignoring id-->
+<!--            await fetch(`${BASE_URL}/${currentTab}/${id}`,{-->
+<!--                method:"PUT",-->
+<!--                headers:{"Content-Type":"application/json"},-->
+<!--                body:JSON.stringify(updated)-->
+<!--            });-->
+<!--            cache[currentTab]=null;-->
+<!--            loadData(currentTab);-->
+<!--        }catch{ alert("Update failed"); }-->
+<!--    });-->
+
+<!--    $(document).on("click",".cancel-btn",()=>loadData(currentTab));-->
+
+<!--    // ==================== FULL ROW EDIT ====================-->
+<!--    $(document).on("click",".edit-btn",function(){-->
+<!--        const row=$(this).closest("tr");-->
+<!--        const rowData={};-->
+<!--        row.find("td.editable-cell").each(function(){ rowData[$(this).data("field")]=$(this).text(); });-->
+<!--        loadForm(currentTab.slice(0,-1), null, rowData);-->
+<!--    });-->
+
+<!--    // ==================== DELETE ====================-->
+<!--    $(document).on("click",".delete-btn",async function(){-->
+<!--        if(!confirm("Delete this record?")) return;-->
+<!--        const id=$(this).closest("tr").data("id")||0;-->
+<!--        try{-->
+<!--            await fetch(`${BASE_URL}/${currentTab}/${id}`,{method:"DELETE"});-->
+<!--            cache[currentTab]=null;-->
+<!--            loadData(currentTab);-->
+<!--        }catch{ alert("Delete failed"); }-->
+<!--    });-->
+
+<!--    // ==================== FORM ====================-->
+<!--    async function loadForm(type, id=null, data={}) {-->
+<!--        $("#welcomeSection,#dashboardSection").addClass("d-none");-->
+<!--        $("#formSection").removeClass("d-none");-->
+
+<!--        try{-->
+<!--            const res=await fetch(`${BASE_URL}/${type}s/metadata`);-->
+<!--            const json=await res.json();-->
+<!--            const columns=Array.isArray(json)?json:json.columns;-->
+<!--            renderForm(type,columns,data);-->
+<!--        }catch{-->
+<!--            $("#formContainer").html(`<p class="text-danger">Error loading form</p>`);-->
+<!--        }-->
+<!--    }-->
+
+<!--    function renderForm(type, columns, data={}) {-->
+<!--        let html=`<h3>${data? 'Edit':'Add'} ${capitalize(type)}</h3><form id="form">`;-->
+<!--        columns.forEach(c=>{-->
+<!--            const val=data[c.name]??"";-->
+<!--            html+=`<div class="mb-3">-->
+<!--                <label>${formatLabel(c.name)}</label>-->
+<!--                <input name="${c.name}" class="form-control" value="${val}">-->
+<!--            </div>`;-->
+<!--        });-->
+<!--        html+=`<button class="btn btn-primary">Submit</button>-->
+<!--               <button type="button" class="btn btn-secondary ms-2" onclick="showDashboard()">Back</button></form>`;-->
+
+<!--        $("#formContainer").html(html);-->
+
+<!--        $("#form").submit(async function(e){-->
+<!--            e.preventDefault();-->
+<!--            const formData={};-->
+<!--            new FormData(this).forEach((v,k)=>formData[k]=v);-->
+<!--            const url = id? `${BASE_URL}/${type}s/${id}`:`${BASE_URL}/${type}s`;-->
+<!--            const method = id?'PUT':'POST';-->
+<!--            await fetch(url,{method,headers:{"Content-Type":"application/json"},body:JSON.stringify(formData)});-->
+<!--            alert("Saved");-->
+<!--            cache[`${type}s`]=null;-->
+<!--            showDashboard();-->
+<!--            loadData(currentTab);-->
+<!--        });-->
+<!--    }-->
+
+<!--    // ==================== COLUMN FILTER ====================-->
+<!--    $(document).on("click","#filterColumnsBtn",function(){-->
+<!--        const table=$("#dataTable");-->
+<!--        const columns=table.find("thead th");-->
+<!--        let html=`<div id="filterPopup" class="p-3 border bg-light" style="position:absolute;z-index:1000;">`;-->
+<!--        columns.each((i,th)=>{-->
+<!--            if($(th).text()==="Actions") return;-->
+<!--            const colName=$(th).text();-->
+<!--            html+=`<div><input type="checkbox" class="column-toggle" data-index="${i}" checked> ${colName}</div>`;-->
+<!--        });-->
+<!--        html+=`<button class="btn btn-sm btn-primary mt-2" id="applyFilterBtn">Apply</button></div>`;-->
+<!--        $("#filterPopup").remove();-->
+<!--        $(this).after(html);-->
+<!--    });-->
+
+<!--    $(document).on("click","#applyFilterBtn",function(){-->
+<!--        $(".column-toggle").each(function(){-->
+<!--            const index=$(this).data("index");-->
+<!--            const show=$(this).is(":checked");-->
+<!--            $("#dataTable tr").each(function(){ $(this).find("th,td").eq(index).toggle(show); });-->
+<!--        });-->
+<!--        $("#filterPopup").remove();-->
+<!--    });-->
+
+<!--    // ==================== HELPERS ====================-->
+<!--    function toggleRowButtons(row, edit=false, inline=false){-->
+<!--        row.find(".edit-btn,.delete-btn").toggleClass("d-none",edit||inline);-->
+<!--        row.find(".save-btn,.cancel-btn").toggleClass("d-none",!edit && !inline);-->
+<!--        if(inline) row.find(".save-btn").removeClass("d-none");-->
+<!--    }-->
+
+<!--    function showDashboard(){ $("#welcomeSection,#formSection").addClass("d-none"); $("#dashboardSection").removeClass("d-none"); }-->
+<!--    function showLoading(){ hideAll(); $("#loadingState").removeClass("d-none"); }-->
+<!--    function showNoData(){ hideAll(); $("#noDataState").removeClass("d-none"); }-->
+<!--    function hideAll(){ $("#loadingState,#noDataState,#dataTable").addClass("d-none"); }-->
+<!--    function formatLabel(s){ return s.replace(/([A-Z])/g," $1").replace(/^./,c=>c.toUpperCase()); }-->
+<!--    function capitalize(s){ return s.charAt(0).toUpperCase()+s.slice(1); }-->
+<!--</script>-->
+
+<!--<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>-->
+<!--</body>-->
+<!--</html>-->
+
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>EduCloud SPA</title>
+<!--        <script src="https://cdn.jsdelivr.net/npm/xlsx@0.19.2/dist/xlsx.full.min.js"></script>-->
+<!--        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">-->
+<!--        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>-->
+        <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link rel="icon" href="data:,">
+        <style>
+            .cursor-pointer { cursor: pointer; }
+            .column-filter { max-height: 250px; overflow-y: auto; }
+            .hidden-column { display: none; }
+        </style>
+    </head>
+    <body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-dark bg-dark">
+        <div class="container-fluid">
+            <span class="navbar-brand">EduCloud</span>
+            <ul class="navbar-nav flex-row gap-3">
+                <li><a class="nav-link text-white" id="navDashboard">Dashboard</a></li>
+                <li class="dropdown">
+                    <a class="nav-link dropdown-toggle text-white" data-bs-toggle="dropdown">Add</a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" onclick="loadForm('student')">Student</a></li>
+                        <li><a class="dropdown-item" onclick="loadForm('teacher')">Teacher</a></li>
+                        <li><a class="dropdown-item" onclick="loadForm('parent')">Parent</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Welcome -->
+        <div id="welcomeSection">
+            <div class="alert alert-info">Welcome 🚀</div>
+        </div>
+
+        <!-- DASHBOARD -->
+        <div id="dashboardSection" class="d-none">
+            <ul class="nav nav-tabs">
+                <li class="nav-item"><a class="nav-link active tab-btn" data-type="students">Students</a></li>
+                <li class="nav-item"><a class="nav-link tab-btn" data-type="parents">Parents</a></li>
+                <li class="nav-item"><a class="nav-link tab-btn" data-type="teachers">Teachers</a></li>
+            </ul>
+
+            <div class="mt-3">
+
+                <div class="d-flex justify-content-between mb-2">
+                    <div id="paginationControls"></div>
+                    <button class="btn btn-secondary btn-sm" id="columnFilterBtn">Columns</button>
+                </div>
+
+                <div id="loadingState" class="text-center d-none">
+                    <div class="spinner-border"></div>
+                </div>
+
+                <div class="mb-2">
+                    <button id="downloadExcel" class="btn btn-success btn-sm">Download Current Page Excel</button>
+                </div>
+
+                <table class="table table-bordered d-none" id="dataTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+
+
+                <div id="noDataState" class="alert alert-warning d-none">No Data Available</div>
+            </div>
+
+
+        </div>
+
+        <!-- FORM SECTION -->
+        <div id="formSection" class="d-none">
+            <div id="formContainer"></div>
+        </div>
+
+        <!-- COLUMN FILTER MODAL -->
+        <div class="modal fade" id="columnFilterModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Select Columns</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body column-filter" id="columnFilterContainer"></div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" id="applyColumnFilter">Apply</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = "http://localhost:8080/api";
+
+        let currentTab = "students";
+        let metadataCache = {};
+        let pageInfo = { page:0, size:10, totalPages:1 };
+
+        $(function(){
+            $("#navDashboard").click(()=>{ showDashboard(); loadPage(currentTab,0); });
+            $(".tab-btn").click(function(){
+                $(".tab-btn").removeClass("active");
+                $(this).addClass("active");
+                currentTab = $(this).data("type");
+                loadPage(currentTab,0);
+            });
+            $("#columnFilterBtn").click(()=> showColumnFilter());
+            $("#applyColumnFilter").click(()=> applyColumnFilter());
+        });
+
+        function showDashboard(){
+            $("#welcomeSection,#formSection").addClass("d-none");
+            $("#dashboardSection").removeClass("d-none");
+        }
+
+        function showLoading(){ $("#loadingState").removeClass("d-none"); $("#dataTable,#noDataState").addClass("d-none"); }
+        function showNoData(){ $("#noDataState").removeClass("d-none"); $("#loadingState,#dataTable").addClass("d-none"); }
+        function hideAll(){ $("#loadingState,#noDataState,#dataTable").addClass("d-none"); }
+
+        async function loadMetadata(tab){
+            if(metadataCache[tab]) return metadataCache[tab];
+            const res = await fetch(`${BASE_URL}/${tab}/metadata`);
+            const json = await res.json();
+            metadataCache[tab] = json;
+            return json;
+        }
+
+        // =================== TABLE =====================
+        async function loadPage(tab,page){
+            showLoading();
+            const size = 10;
+            try{
+                const meta = await loadMetadata(tab);
+                const url = `${BASE_URL}/${tab}?page=${page}&size=${size}`;
+                const res = await fetch(url);
+                const json = await res.json();
+                pageInfo = { page:json.page, size:json.size, totalPages:json.totalPages };
+                renderTable(json.data, meta);
+                renderPagination();
+            }catch(e){ console.error(e); showNoData(); }
+        }
+
+        // =================== DOWNLOAD CURRENT PAGE =====================
+        $(function() {
+    $("#downloadExcel").click(function() {
+        if(typeof XLSX === "undefined"){ alert("XLSX library not loaded"); return; }
+
+        const table = $("#dataTable");
+        const rows = [];
+        const visibleCols = [];
+
+        table.find("thead th:visible").each(function() { visibleCols.push($(this).text()); });
+
+        table.find("tbody tr:visible").each(function() {
+            const rowData = {};
+            $(this).find("td:visible").each(function(i){ rowData[visibleCols[i]] = $(this).text(); });
+            rows.push(rowData);
+        });
+
+        if(rows.length===0){ alert("No data to download"); return; }
+
+        const ws = XLSX.utils.json_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, capitalize(currentTab));
+
+        XLSX.writeFile(wb, `${capitalize(currentTab)}_Page${pageInfo.page+1}.xlsx`);
+    });
+});
+
+        function renderTable(data, meta){
+            hideAll();
+            if(!data || !data.length) { showNoData(); return; }
+
+            // HEADER
+            let thead="<tr>";
+            meta.forEach(f=> thead+=`<th data-field="${f.name}">${formatLabel(f.name)}</th>`);
+            thead+="<th>Actions</th></tr>";
+            $("#dataTable thead").html(thead);
+
+            // BODY
+            let tbody="";
+            data.forEach(row=>{
+                tbody+=`<tr data-id="${row.id||''}">`;
+                meta.forEach(f=> tbody+=`<td data-field="${f.name}" class="cursor-pointer">${row[f.name]??'-'}</td>`);
+                tbody+=`<td>
+                    <button class="btn btn-sm btn-warning edit-row-btn">Edit</button>
+                    <button class="btn btn-sm btn-success save-row-btn d-none">Save</button>
+                    <button class="btn btn-sm btn-secondary cancel-row-btn d-none">Cancel</button>
+                    <button class="btn btn-sm btn-danger delete-row-btn">Delete</button>
+                </td>`;
+                tbody+="</tr>";
+            });
+            $("#dataTable tbody").html(tbody);
+            $("#dataTable").removeClass("d-none");
+        }
+
+        // =================== INLINE CELL EDIT =====================
+        $(document).on("click","#dataTable td[data-field]",function(){
+            const td=$(this);
+            if(td.find("input").length) return; // already editing
+            const row=td.closest("tr");
+            td.html(`<input class="form-control form-control-sm" value="${td.text()!=='-'?td.text():''}">`);
+            row.find(".edit-row-btn,.delete-row-btn").addClass("d-none");
+            row.find(".save-row-btn,.cancel-row-btn").removeClass("d-none");
+        });
+
+        $(document).on("click",".cancel-row-btn",function(){ loadPage(currentTab,pageInfo.page); });
+
+        $(document).on("click",".save-row-btn",async function(){
+            const row=$(this).closest("tr");
+            const id=row.data("id");
+            const obj={};
+            row.find("td[data-field]").each(function(){
+                obj[$(this).data("field")]=$(this).find("input").val();
+            });
+            try{
+                await fetch(`${BASE_URL}/${currentTab}/${id}`,{
+                    method:"PUT",
+                    headers:{"Content-Type":"application/json"},
+                    body:JSON.stringify(obj)
+                });
+                loadPage(currentTab,pageInfo.page);
+            }catch(e){ alert("Update failed"); }
+        });
+
+        // =================== ROW FULL EDIT =====================
+       // =================== ROW FULL EDIT =====================
+    $(document).on("click", ".edit-row-btn", async function() {
+        const row = $(this).closest("tr");
+        const id = row.data("id");
+
+        // Get metadata for current tab
+        const meta = await loadMetadata(currentTab);
+
+        // Build row edit form
+        let html = `<h3>Edit ${capitalize(currentTab.slice(0, -1))}</h3><form id="entityForm">`;
+        meta.forEach(f => {
+            const val = row.find(`td[data-field="${f.name}"]`).text() === '-' ? '' : row.find(`td[data-field="${f.name}"]`).text();
+            const type = detectType(f.name);
+            html += `<div class="mb-3">
+                        <label>${formatLabel(f.name)}${f.required?'*':''}</label>
+                        <input name="${f.name}" type="${type}" class="form-control" value="${val}" ${f.required?'required':''}>
+                     </div>`;
+        });
+        html += `<button class="btn btn-primary">Save</button>
+                 <button type="button" class="btn btn-secondary ms-2" onclick="showDashboard()">Cancel</button></form>`;
+
+        // Show form section
+        $("#dashboardSection").addClass("d-none");
+        $("#formSection").removeClass("d-none");
+        $("#formContainer").html(html);
+
+        // Handle submit
+        $("#entityForm").submit(async function(e){
+            e.preventDefault();
+            const obj = {};
+            new FormData(this).forEach((v,k)=> obj[k]=v);
+            try {
+                await fetch(`${BASE_URL}/${currentTab}/${id}`, {
+                    method: "PUT",
+                    headers: {"Content-Type":"application/json"},
+                    body: JSON.stringify(obj)
+                });
+                showDashboard();
+                loadPage(currentTab,pageInfo.page);
+            } catch(e){
+                alert("Save failed");
+            }
+        });
+    });
+        // =================== DELETE =====================
+        $(document).on("click",".delete-row-btn",async function(){
+            if(!confirm("Delete this row?")) return;
+            const id=$(this).closest("tr").data("id");
+            try{
+                await fetch(`${BASE_URL}/${currentTab}/${id}`,{method:"DELETE"});
+                loadPage(currentTab,pageInfo.page);
+            }catch(e){ alert("Delete failed"); }
+        });
+
+        // =================== ADD / FULL FORM =====================
+        async function loadForm(tab,id=null,rowData=null){
+            showDashboard();
+            $("#dashboardSection").addClass("d-none");
+            $("#formSection").removeClass("d-none");
+            const meta=await loadMetadata(tab);
+            let html=`<h3>${id?'Edit':'Add'} ${capitalize(tab.slice(0,-1))}</h3><form id="entityForm">`;
+            meta.forEach(f=>{
+                const val=rowData?rowData[f.name]||'':'';
+                const type=detectType(f.name);
+                html+=`<div class="mb-3">
+                    <label>${formatLabel(f.name)}${f.required?'*':''}</label>
+                    <input name="${f.name}" type="${type}" class="form-control" value="${val}" ${f.required?'required':''}>
+                </div>`;
+            });
+            html+=`<button class="btn btn-primary">Save</button>
+                   <button type="button" class="btn btn-secondary ms-2" onclick="showDashboard()">Cancel</button></form>`;
+            $("#formContainer").html(html);
+
+            $("#entityForm").submit(async function(e){
+                e.preventDefault();
+                const obj={};
+                new FormData(this).forEach((v,k)=>obj[k]=v);
+                try{
+                    if(id){
+                        await fetch(`${BASE_URL}/${tab}/${id}`,{
+                            method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(obj)
+                        });
+                    }else{
+                        await fetch(`${BASE_URL}/${tab}`,{
+                            method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(obj)
+                        });
+                    }
+                    showDashboard();
+                    loadPage(tab,0);
+                }catch(e){ alert("Save failed"); }
+            });
+        }
+
+        // =================== COLUMN FILTER =====================
+        let currentColumnsVisible=[];
+        async function showColumnFilter(){
+            const meta=await loadMetadata(currentTab);
+            const html=meta.map(f=>`<div class="form-check">
+                <input class="form-check-input column-checkbox" type="checkbox" value="${f.name}" checked>
+                <label class="form-check-label">${formatLabel(f.name)}</label>
+            </div>`).join('');
+            $("#columnFilterContainer").html(html);
+            const modal=new bootstrap.Modal(document.getElementById("columnFilterModal"));
+            modal.show();
+        }
+
+        function applyColumnFilter(){
+            currentColumnsVisible=[];
+            $("#columnFilterContainer .column-checkbox").each(function(){
+                const col=$(this).val();
+                if($(this).is(":checked")) currentColumnsVisible.push(col);
+            });
+            $("#dataTable thead th, #dataTable tbody td").each(function(){
+                const field=$(this).data("field");
+                if(field) $(this).toggleClass("hidden-column",!currentColumnsVisible.includes(field));
+            });
+            const modalEl=document.getElementById("columnFilterModal");
+            bootstrap.Modal.getInstance(modalEl).hide();
+        }
+
+        // =================== PAGINATION =====================
+        function renderPagination(){
+            let html=`<nav><ul class="pagination pagination-sm">`;
+            if(pageInfo.page>0) html+=`<li class="page-item"><a class="page-link cursor-pointer" onclick="loadPage('${currentTab}',${pageInfo.page-1})">Prev</a></li>`;
+            for(let i=0;i<pageInfo.totalPages;i++)
+                html+=`<li class="page-item ${i===pageInfo.page?'active':''}"><a class="page-link cursor-pointer" onclick="loadPage('${currentTab}',${i})">${i+1}</a></li>`;
+            if(pageInfo.page<pageInfo.totalPages-1) html+=`<li class="page-item"><a class="page-link cursor-pointer" onclick="loadPage('${currentTab}',${pageInfo.page+1})">Next</a></li>`;
+            html+=`</ul></nav>`;
+            $("#paginationControls").html(html);
+        }
+
+        // =================== HELPERS =====================
+        function detectType(field){
+            const f=field.toLowerCase();
+            if(f.includes("email")) return "email";
+            if(f.includes("date")) return "date";
+            if(f.includes("phone")) return "tel";
+            if(f.includes("number")||f.includes("years")) return "number";
+            return "text";
+        }
+
+        function formatLabel(s){ return s.replace(/([A-Z])/g," $1").replace(/^./,c=>c.toUpperCase()); }
+        function capitalize(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    </body>
+    </html>
